@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace - Allegro Style</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        allegro: {
+                            DEFAULT: '#ff5a00',
+                            dark: '#e04e00',
+                            light: '#fff2eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col text-gray-800">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+            <!-- Logo -->
+            <a href="#" onclick="router('home')" class="flex items-center gap-2 text-2xl font-bold text-allegro shrink-0 cursor-pointer">
+                <i class="fa-solid fa-bag-shopping"></i>
+                <span>Marketplace</span>
+            </a>
+
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-2xl relative">
+                <div class="flex">
+                    <input type="text" id="searchInput" placeholder="Czego szukasz? (np. Smartfon, Buty, Lampa...)" 
+                           class="w-full pl-4 pr-10 py-2.5 border-2 border-gray-300 rounded-l-lg focus:outline-none focus:border-allegro text-sm">
+                    <button onclick="handleSearch()" class="bg-allegro hover:bg-allegro-dark text-white px-6 rounded-r-lg font-medium transition flex items-center justify-center">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Actions (Add Offer, Cart & Auth) -->
+            <div class="flex items-center gap-3 shrink-0">
+                <!-- Add Offer Button (Logged in only) -->
+                <button onclick="openOfferModal()" id="addOfferHeaderBtn" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden md:inline">Wystaw przedmiot</span>
+                </button>
+
+                <!-- Cart Button -->
+                <button onclick="toggleCartModal()" class="relative p-2.5 text-gray-700 hover:text-allegro transition flex items-center gap-2 bg-gray-50 hover:bg-gray-100 rounded-lg">
+                    <i class="fa-solid fa-cart-shopping text-xl"></i>
+                    <span class="hidden sm:inline font-medium text-sm">Koszyk</span>
+                    <span id="cartBadge" class="absolute -top-1 -right-1 bg-allegro text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
+                </button>
+
+                <!-- User Account / Login Button -->
+                <div id="userSection">
+                    <button onclick="openLoginModal()" id="loginBtn" class="border-2 border-allegro text-allegro hover:bg-allegro-light font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                        <i class="fa-regular fa-user"></i>
+                        <span>Zaloguj się</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subheader Categories / Links -->
+        <div class="bg-gray-50 border-t border-gray-200" id="categoriesBar">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-6 overflow-x-auto text-sm font-medium whitespace-nowrap scrollbar-none">
+                <button onclick="filterCategory('Wszystkie')" class="text-allegro hover:text-allegro-dark transition font-semibold active-cat">Wszystkie kategorie</button>
+                <button onclick="filterCategory('Elektronika')" class="text-gray-600 hover:text-allegro transition">Elektronika</button>
+                <button onclick="filterCategory('Moda')" class="text-gray-600 hover:text-allegro transition">Moda</button>
+                <button onclick="filterCategory('Dom i Ogród')" class="text-gray-600 hover:text-allegro transition">Dom i Ogród</button>
+                <button onclick="filterCategory('Sport')" class="text-gray-600 hover:text-allegro transition">Sport</button>
+                <button onclick="filterCategory('Supermarket')" class="text-gray-600 hover:text-allegro transition">Supermarket</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Wrapper (Dynamic Views) -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6" id="mainContainer">
+        <!-- Rendered dynamically by router() -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12 py-8 text-sm text-gray-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p>&copy; 2026 Marketplace Polska. Wszelkie prawa zastrzeżone.</p>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-allegro transition">Regulamin</a>
+                <a href="#" class="hover:text-allegro transition">Polityka prywatności</a>
+                <a href="#" class="hover:text-allegro transition">Pomoc i kontakt</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal (Password: 7777, masked input) -->
+    <div id="loginModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-allegro-light text-allegro rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900">Logowanie do konta sprzedawcy</h3>
+                <p class="text-sm text-gray-500 mt-1">Wpisz hasło dostępu, aby zarządzać ofertami (Hasło: <span class="font-semibold text-allegro">7777</span>)</p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div class="relative">
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Hasło dostępu</label>
+                    <input type="password" id="passwordInput" placeholder="••••" required autocomplete="current-password"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-allegro text-center text-2xl tracking-widest">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-9 text-gray-400 hover:text-gray-600">
+                        <i id="eyeIcon" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <div id="loginError" class="text-red-500 text-xs text-center hidden">Błędne hasło! Spróbuj ponownie (Podpowiedź: 7777).</div>
+                <button type="submit" class="w-full bg-allegro hover:bg-allegro-dark text-white font-medium py-3 rounded-xl transition shadow-lg shadow-allegro/20">
+                    Zaloguj się
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Offer Modal -->
+    <div id="offerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeOfferModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 id="offerModalTitle" class="text-xl font-bold text-gray-900 mb-4">Wystaw nowy przedmiot</h3>
+            <form onsubmit="handleOfferSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editOfferId">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tytuł oferty</label>
+                    <input type="text" id="offerTitle" placeholder="np. Rower Górski 29''" required
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:border-allegro text-sm">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cena (zł)</label>
+                        <input type="number" step="0.01" id="offerPrice" placeholder="0.00" required
+                               class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:border-allegro text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Kategoria</label>
+                        <select id="offerCategory" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:border-allegro text-sm bg-white">
+                            <option value="Elektronika">Elektronika</option>
+                            <option value="Moda">Moda</option>
+                            <option value="Dom i Ogród">Dom i Ogród</option>
+                            <option value="Sport">Sport</option>
+                            <option value="Supermarket">Supermarket</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Link do zdjęcia (URL)</label>
+                    <input type="url" id="offerImage" placeholder="https://images.unsplash.com/..." required
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:border-allegro text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Etykieta (opcjonalnie)</label>
+                    <input type="text" id="offerBadge" placeholder="np. Hit, Nowość, -20%"
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:border-allegro text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Opis przedmiotu</label>
+                    <textarea id="offerDescription" rows="4" placeholder="Szczegółowy opis, stan, parametry..." required
+                              class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:border-allegro text-sm"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-allegro hover:bg-allegro-dark text-white font-medium py-3 rounded-xl transition shadow-lg shadow-allegro/20">
+                    Zapisz ofertę
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cart Slide-over Modal -->
+    <div id="cartModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end hidden">
+        <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-cart-shopping text-allegro"></i> Twój Koszyk
+                </h3>
+                <button onclick="toggleCartModal()" class="text-gray-400 hover:text-gray-600 p-2 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Cart items -->
+            </div>
+
+            <div class="p-4 border-t border-gray-200 bg-gray-50 space-y-3">
+                <div class="flex items-center justify-between text-base font-semibold">
+                    <span>Razem do zapłaty:</span>
+                    <span id="cartTotalPrice" class="text-xl font-bold text-allegro">0,00 zł</span>
+                </div>
+                <button onclick="checkout()" class="w-full bg-allegro hover:bg-allegro-dark text-white font-medium py-3 rounded-xl transition shadow-lg shadow-allegro/20">
+                    Kupuję i płacę
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 transform translate-y-24 opacity-0 transition-all duration-300 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toastMessage" class="text-sm font-medium">Komunikat</span>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Helper to generate 24-char random alphanumeric string
+        function generate24CharSlug() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 24; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Mock Products Data with unique 24-char links
+        let products = [
+            {
+                id: 1,
+                slug: generate24CharSlug(),
+                title: "Smartfon X10 Pro 8/256GB Midnight Black",
+                price: 1899.00,
+                category: "Elektronika",
+                rating: 4.8,
+                reviews: 124,
+                image: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=600&q=80",
+                badge: "Hit",
+                description: "Najnowszy smartfon z potężnym procesorem, niesamowitym aparatem i baterią trwającą cały dzień. W zestawie ładowarka oraz etui ochronne."
+            },
+            {
+                id: 2,
+                slug: generate24CharSlug(),
+                title: "Bezprzewodowe Słuchawki Nauszne ANC",
+                price: 349.00,
+                category: "Elektronika",
+                rating: 4.6,
+                reviews: 89,
+                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+                badge: "Super Cena",
+                description: "Aktywna redukcja szumów (ANC), krystalicznie czysty dźwięk Hi-Fi oraz miękkie nauszniki zapewniające komfort przez wiele godzin."
+            },
+            {
+                id: 3,
+                slug: generate24CharSlug(),
+                title: "Męska Kurtka Przejściowa Outdoor",
+                price: 199.99,
+                category: "Moda",
+                rating: 4.5,
+                reviews: 45,
+                image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80",
+                badge: "-20%",
+                description: "Wiatroszczelna i wodoodporna kurtka idealna na wiosenne i jesienne dni. Funkcjonalne kieszenie i nowoczesny krój."
+            },
+            {
+                id: 4,
+                slug: generate24CharSlug(),
+                title: "Nowoczesna Lampa Stołowa LED Minimalistyczna",
+                price: 129.50,
+                category: "Dom i Ogród",
+                rating: 4.9,
+                reviews: 210,
+                image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
+                badge: "Bestseller",
+                description: "Stylowa lampa biurkowa z regulacją barwy światła oraz funkcją ściemniania. Energooszczędne diody LED."
+            },
+            {
+                id: 5,
+                slug: generate24CharSlug(),
+                title: "Zestaw Hantle Regulowane 2x10kg z Walizką",
+                price: 259.00,
+                category: "Sport",
+                rating: 4.7,
+                reviews: 62,
+                image: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=600&q=80",
+                badge: "Promocja",
+                description: "Idealny zestaw do domowej siłowni. Solidne wykonanie, łatwa zmiana obciążenia i poręczna walizka transportowa."
+            },
+            {
+                id: 6,
+                slug: generate24CharSlug(),
+                title: "Kawy Ziarniste Arabica 100% 1kg Rzemieślnicza",
+                price: 79.99,
+                category: "Supermarket",
+                rating: 4.9,
+                reviews: 312,
+                image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=600&q=80",
+                badge: "Polecamy",
+                description: "Świeżo palone ziarna 100% Arabica z nutami czekolady i orzechów. Perfekcyjna do ekspresu i kawiarki."
+            }
+        ];
+
+        // App State
+        let cart = [];
+        let isLoggedIn = false;
+        let currentCategory = 'Wszystkie';
+        let searchQuery = '';
+        let currentView = { type: 'home', param: null };
+
+        // Initialize Router & App on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check URL hash for routing (e.g., #slug1234567890abcdef123456)
+            handleUrlRoute();
+            window.addEventListener('hashchange', handleUrlRoute);
+        });
+
+        function handleUrlRoute() {
+            const hash = window.location.hash.substring(1);
+            if (hash.startsWith('p/')) {
+                const slug = hash.substring(2);
+                const product = products.find(p => p.slug === slug);
+                if (product) {
+                    currentView = { type: 'product', param: product };
+                } else {
+                    currentView = { type: 'home', param: null };
+                }
+            } else {
+                currentView = { type: 'home', param: null };
+            }
+            render();
+        }
+
+        function router(type, param = null) {
+            if (type === 'home') {
+                window.location.hash = '';
+                currentView = { type: 'home', param: null };
+            } else if (type === 'product') {
+                window.location.hash = `p/${param.slug}`;
+                currentView = { type: 'product', param };
+            }
+            render();
+        }
+
+        // Render Main View Controller
+        function render() {
+            const container = document.getElementById('mainContainer');
+            const catBar = document.getElementById('categoriesBar');
+
+            if (currentView.type === 'home') {
+                catBar.style.display = 'block';
+                container.innerHTML = `
+                    <!-- Hero Banner -->
+                    <div class="bg-gradient-to-r from-orange-500 to-allegro text-white rounded-2xl p-6 sm:p-10 mb-8 shadow-md flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div class="space-y-3 text-center md:text-left">
+                            <span class="bg-white/20 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Super Okazje</span>
+                            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Wiosenne Wietrzenie Magazynów</h1>
+                            <p class="text-orange-100 text-sm sm:text-base max-w-xl">Znajdź tysiące produktów w świetnych cenach. Szybka dostawa i bezpieczne zakupy w jednym miejscu.</p>
+                        </div>
+                        <button onclick="scrollToProducts()" class="bg-white text-allegro font-bold px-6 py-3 rounded-xl shadow hover:bg-orange-50 transition shrink-0">
+                            Sprawdź oferty
+                        </button>
+                    </div>
+
+                    <!-- Product Grid Section Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 id="sectionTitle" class="text-xl sm:text-2xl font-bold text-gray-900">Polecane dla Ciebie</h2>
+                        <div class="text-sm text-gray-500" id="productCount">Znaleziono 0 produktów</div>
+                    </div>
+
+                    <!-- Products Grid -->
+                    <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        <!-- Dynamic items -->
+                    </div>
+                `;
+                filterAndSearch();
+            } else if (currentView.type === 'product') {
+                catBar.style.display = 'none';
+                const p = currentView.param;
+                container.innerHTML = `
+                    <div class="mb-4">
+                        <button onclick="router('home')" class="text-sm text-allegro font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-left"></i> Wróć do listy ofert
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-10 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-gray-100 rounded-xl overflow-hidden h-96 flex items-center justify-center relative">
+                            <img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x400/eee/333?text=Brak+Zdj%C4%99cia'">
+                            ${p.badge ? `<span class="absolute top-4 left-4 bg-allegro text-white text-sm font-bold px-3 py-1 rounded-md shadow">${p.badge}</span>` : ''}
+                        </div>
+                        <div class="flex flex-col justify-between space-y-6">
+                            <div>
+                                <span class="text-xs text-gray-400 uppercase font-semibold tracking-wider">${p.category}</span>
+                                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">${p.title}</h1>
+                                
+                                <div class="flex items-center gap-2 mt-3">
+                                    <div class="text-amber-400 text-sm">
+                                        <i class="fa-solid fa-star"></i>
+                                        <span class="text-gray-700 font-bold ml-1">${p.rating}</span>
+                                    </div>
+                                    <span class="text-gray-300">|</span>
+                                    <span class="text-xs text-gray-500">${p.reviews} opinii</span>
+                                </div>
+
+                                <div class="mt-6 bg-orange-50/50 border border-allegro/20 rounded-xl p-4">
+                                    <span class="text-xs text-gray-500 block">Cena</span>
+                                    <span class="text-3xl font-black text-gray-900">${p.price.toFixed(2)} zł</span>
+                                    <span class="text-xs text-green-600 font-medium block mt-1"><i class="fa-solid fa-truck-fast"></i> Dostawa jutro</span>
+                                </div>
+
+                                <div class="mt-6">
+                                    <h3 class="text-sm font-bold text-gray-900 mb-2">Opis przedmiotu</h3>
+                                    <p class="text-sm text-gray-600 leading-relaxed">${p.description}</p>
+                                </div>
+
+                                <div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs text-gray-500 break-all">
+                                    <span class="font-semibold block text-gray-700 mb-1">Unikalny link podstrony:</span>
+                                    <code>#p/${p.slug}</code>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3 pt-4 border-t border-gray-100">
+                                <button onclick="addToCart(${p.id})" class="w-full bg-allegro hover:bg-allegro-dark text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-allegro/20 flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-cart-plus"></i> Dodaj do koszyka
+                                </button>
+                                
+                                ${isLoggedIn ? `
+                                    <div class="flex gap-3">
+                                        <button onclick="openEditOfferModal(${p.id})" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-pen"></i> Edytuj ofertę
+                                        </button>
+                                        <button onclick="deleteOffer(${p.id})" class="flex-1 bg-red-100 hover:bg-red-200 text-red-600 font-medium py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-trash"></i> Usuń ofertę
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Render Products Grid on Home
+        function renderProducts(items) {
+            const grid = document.getElementById('productGrid');
+            const countEl = document.getElementById('productCount');
+            const titleEl = document.getElementById('sectionTitle');
+            
+            if(!grid) return;
+
+            titleEl.textContent = currentCategory === 'Wszystkie' ? 'Polecane dla Ciebie' : `Kategoria: ${currentCategory}`;
+            countEl.textContent = `Znaleziono ${items.length} produktów`;
+
+            if (items.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-gray-500">
+                        <i class="fa-solid fa-box-open text-4xl mb-3 text-gray-400"></i>
+                        <p class="text-lg font-medium">Brak produktów spełniających kryteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = items.map(p => `
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col group">
+                    <div class="relative bg-gray-100 h-48 overflow-hidden cursor-pointer" onclick="router('product', products.find(item => item.id === ${p.id}))">
+                        <img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/eee/333?text=Brak+Zdj%C4%99cia'">
+                        ${p.badge ? `<span class="absolute top-2 left-2 bg-allegro text-white text-xs font-bold px-2.5 py-1 rounded-md shadow">${p.badge}</span>` : ''}
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs text-gray-400 font-medium">${p.category}</span>
+                            <h3 onclick="router('product', products.find(item => item.id === ${p.id}))" class="font-medium text-gray-900 text-sm mt-1 line-clamp-2 hover:text-allegro transition cursor-pointer">${p.title}</h3>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-gray-400 block">Cena</span>
+                                <span class="text-lg font-extrabold text-gray-900">${p.price.toFixed(2)} zł</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="addToCart(${p.id})" title="Dodaj do koszyka" class="bg-allegro/10 hover:bg-allegro text-allegro hover:text-white font-medium p-2.5 rounded-lg transition flex items-center justify-center">
+                                    <i class="fa-solid fa-cart-plus text-sm"></i>
+                                </button>
+                                ${isLoggedIn ? `
+                                    <button onclick="openEditOfferModal(${p.id})" title="Edytuj" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium p-2.5 rounded-lg transition">
+                                        <i class="fa-solid fa-pen text-xs"></i>
+                                    </button>
+                                    <button onclick="deleteOffer(${p.id})" title="Usuń" class="bg-red-50 hover:bg-red-100 text-red-600 font-medium p-2.5 rounded-lg transition">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter Categories
+        function filterCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('#categoriesBar button').forEach(btn => {
+                if(btn.textContent.includes(category)) {
+                    btn.className = "text-allegro hover:text-allegro-dark transition font-semibold";
+                } else {
+                    btn.className = "text-gray-600 hover:text-allegro transition";
+                }
+            });
+            filterAndSearch();
+        }
+
+        // Search Handlers
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (currentView.type !== 'home') router('home');
+            else filterAndSearch();
+        }
+
+        const searchInputEl = document.getElementById('searchInput');
+        if(searchInputEl) {
+            searchInputEl.addEventListener('keyup', (e) => {
+                searchQuery = e.target.value.toLowerCase().trim();
+                if (currentView.type === 'home') filterAndSearch();
+                if(e.key === 'Enter' && currentView.type !== 'home') router('home');
+            });
+        }
+
+        function filterAndSearch() {
+            let filtered = products;
+            if (currentCategory !== 'Wszystkie') {
+                filtered = filtered.filter(p => p.category === currentCategory);
+            }
+            if (searchQuery) {
+                filtered = filtered.filter(p => p.title.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery));
+            }
+            renderProducts(filtered);
+        }
+
+        function scrollToProducts() {
+            const grid = document.getElementById('productGrid');
+            if(grid) grid.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Offer Management (Add / Edit / Delete restricted to Logged In)
+        function openOfferModal() {
+            if (!isLoggedIn) {
+                showToast("Musisz się zalogować, aby wystawić ofertę!", "error");
+                openLoginModal();
+                return;
+            }
+            document.getElementById('offerModalTitle').textContent = "Wystaw nowy przedmiot";
+            document.getElementById('editOfferId').value = "";
+            document.getElementById('offerTitle').value = "";
+            document.getElementById('offerPrice').value = "";
+            document.getElementById('offerCategory').value = "Elektronika";
+            document.getElementById('offerImage').value = "";
+            document.getElementById('offerBadge').value = "";
+            document.getElementById('offerDescription').value = "";
+            document.getElementById('offerModal').classList.remove('hidden');
+        }
+
+        function openEditOfferModal(productId) {
+            if (!isLoggedIn) {
+                showToast("Brak uprawnień. Zaloguj się!", "error");
+                openLoginModal();
+                return;
+            }
+            const p = products.find(item => item.id === productId);
+            if(!p) return;
+
+            document.getElementById('offerModalTitle').textContent = "Edytuj ofertę";
+            document.getElementById('editOfferId').value = p.id;
+            document.getElementById('offerTitle').value = p.title;
+            document.getElementById('offerPrice').value = p.price;
+            document.getElementById('offerCategory').value = p.category;
+            document.getElementById('offerImage').value = p.image;
+            document.getElementById('offerBadge').value = p.badge || "";
+            document.getElementById('offerDescription').value = p.description || "";
+            document.getElementById('offerModal').classList.remove('hidden');
+        }
+
+        function closeOfferModal() {
+            document.getElementById('offerModal').classList.add('hidden');
+        }
+
+        function handleOfferSubmit(e) {
+            e.preventDefault();
+            if (!isLoggedIn) {
+                showToast("Sesja wygasła lub brak uprawnień!", "error");
+                return;
+            }
+
+            const editId = document.getElementById('editOfferId').value;
+            const title = document.getElementById('offerTitle').value;
+            const price = parseFloat(document.getElementById('offerPrice').value);
+            const category = document.getElementById('offerCategory').value;
+            const image = document.getElementById('offerImage').value;
+            const badge = document.getElementById('offerBadge').value;
+            const description = document.getElementById('offerDescription').value;
+
+            if (editId) {
+                // Edit existing
+                const p = products.find(item => item.id == editId);
+                if (p) {
+                    p.title = title;
+                    p.price = price;
+                    p.category = category;
+                    p.image = image;
+                    p.badge = badge;
+                    p.description = description;
+                    showToast("Oferta została zaktualizowana!");
+                    if (currentView.type === 'product' && currentView.param.id == p.id) {
+                        currentView.param = p;
+                    }
+                }
+            } else {
+                // Create new with 24-char random slug link
+                const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+                const newProduct = {
+                    id: newId,
+                    slug: generate24CharSlug(),
+                    title,
+                    price,
+                    category,
+                    rating: 5.0,
+                    reviews: 1,
+                    image,
+                    badge,
+                    description
+                };
+                products.unshift(newProduct);
+                showToast("Oferta została pomyślnie wystawiona!");
+            }
+
+            closeOfferModal();
+            render();
+        }
+
+        function deleteOffer(productId) {
+            if (!isLoggedIn) {
+                showToast("Brak uprawnień do usuwania!", "error");
+                openLoginModal();
+                return;
+            }
+            if (confirm("Czy na pewno chcesz trwale usunąć tę ofertę?")) {
+                products = products.filter(p => p.id !== productId);
+                showToast("Oferta została usunięta.");
+                router('home');
+            }
+        }
+
+        // Cart Logic
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            updateCartBadge();
+            renderCartItems();
+            showToast(`Dodano do koszyka: ${product.title}`);
+        }
+
+        function updateQuantity(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+
+            updateCartBadge();
+            renderCartItems();
+        }
+
+        function updateCartBadge() {
+            const badge = document.getElementById('cartBadge');
+            const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+            if (totalCount > 0) {
+                badge.textContent = totalCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderCartItems() {
+            const container = document.getElementById('cartItemsContainer');
+            const totalPriceEl = document.getElementById('cartTotalPrice');
+            if(!container) return;
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 space-y-2 py-12">
+                        <i class="fa-solid fa-cart-shopping text-4xl mb-2 text-gray-300"></i>
+                        <p class="text-base font-medium">Twój koszyk jest pusty</p>
+                    </div>
+                `;
+                totalPriceEl.textContent = "0,00 zł";
+                return;
+            }
+
+            let totalPrice = 0;
+            container.innerHTML = cart.map(item => {
+                totalPrice += item.price * item.quantity;
+                return `
+                    <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <img src="${item.image}" alt="${item.title}" class="w-16 h-16 object-cover rounded-lg shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-medium text-gray-900 truncate">${item.title}</h4>
+                            <span class="text-xs text-gray-500">${item.price.toFixed(2)} zł / szt.</span>
+                            <div class="flex items-center gap-3 mt-2">
+                                <button onclick="updateQuantity(${item.id}, -1)" class="w-6 h-6 bg-white border border-gray-300 rounded flex items-center justify-center text-xs hover:bg-gray-100">-</button>
+                                <span class="text-xs font-semibold">${item.quantity}</span>
+                                <button onclick="updateQuantity(${item.id}, 1)" class="w-6 h-6 bg-white border border-gray-300 rounded flex items-center justify-center text-xs hover:bg-gray-100">+</button>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)} zł</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            totalPriceEl.textContent = `${totalPrice.toFixed(2)} zł`;
+        }
+
+        function toggleCartModal() {
+            const modal = document.getElementById('cartModal');
+            modal.classList.toggle('hidden');
+            renderCartItems();
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                showToast("Koszyk jest pusty!", "error");
+                return;
+            }
+            showToast("Zamówienie zostało złożone pomyślnie!");
+            cart = [];
+            updateCartBadge();
+            toggleCartModal();
+        }
+
+        // Password & Login System (Pass: 7777, masked input)
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+        }
+
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeIcon.className = "fa-solid fa-eye-slash";
+            } else {
+                passInput.type = 'password';
+                eyeIcon.className = "fa-solid fa-eye";
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('passwordInput').value;
+            const errorEl = document.getElementById('loginError');
+
+            if (pass === '7777') {
+                isLoggedIn = true;
+                closeLoginModal();
+                updateUserSection();
+                showToast("Zalogowano pomyślnie! Uprawnienia sprzedawcy aktywne.");
+                render();
+            } else {
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            isLoggedIn = false;
+            updateUserSection();
+            showToast("Wylogowano pomyślnie.");
+            render();
+        }
+
+        function updateUserSection() {
+            const section = document.getElementById('userSection');
+            const addBtn = document.getElementById('addOfferHeaderBtn');
+
+            if (isLoggedIn) {
+                addBtn.classList.remove('hidden');
+                addBtn.classList.add('flex');
+                section.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="hidden sm:flex items-center gap-2 bg-orange-50 border border-allegro/30 px-3 py-1.5 rounded-lg text-sm text-allegro font-semibold">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Sprzedawca</span>
+                        </div>
+                        <button onclick="handleLogout()" class="text-gray-500 hover:text-red-500 text-sm font-medium transition p-2" title="Wyloguj">
+                            <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                addBtn.classList.add('hidden');
+                addBtn.classList.remove('flex');
+                section.innerHTML = `
+                    <button onclick="openLoginModal()" id="loginBtn" class="border-2 border-allegro text-allegro hover:bg-allegro-light font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                        <i class="fa-regular fa-user"></i>
+                        <span>Zaloguj się</span>
+                    </button>
+                `;
+            }
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            if(type === 'error') {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-red-400";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-green-400";
+            }
+
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
